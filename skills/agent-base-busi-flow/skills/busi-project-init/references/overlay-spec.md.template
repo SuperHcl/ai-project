@@ -1,0 +1,118 @@
+<!-- 由 busi-project-init 生成于 {生成时间} -->
+<!-- 搜索 <!-- TODO --> 逐项填充 -->
+
+# {项目名称} 项目 8 步流程 Overlay
+
+**与 `busi-*` 各 Skill 配套使用。本文件按 B2-B9 顺序给出项目特化补充。**
+
+> 阅读本文件前请先看 `.agent/AGENT.md`（项目骨架）和 `.agent/coding-rules.md`（编码 overlay）。
+
+## B2 需求解析（busi-req-analyze）overlay
+
+| 项 | {项目名称} 取值 |
+|---|---|
+| iterate 根目录 | <!-- TODO: `doc/ai-doc/iterate/` / `iterate/` --> |
+| 文档分层规范 | <!-- TODO: `{iterate根目录}/v{版本}/{业务模块}/{n}-{产物名}.md` 或 `{iterate根目录}/v{版本}/{n}-{产物名}.md` --> |
+| 版本号规则 | <!-- TODO: `v{major}.{minor}.{patch}` / `release-{x}` --> |
+| 文档头部字段 | 版本号 / 立项日期 / 计划上线日期 / 业务负责人 / 技术负责人 |
+| 数据模型表名 | <!-- TODO: 表前缀，如 `ocs_` --> |
+| 涉及接口表 | "归属服务"列默认填 `<!-- TODO: {项目}-server -->` |
+
+## B3 需求澄清（busi-req-clarify）overlay
+
+| 项 | {项目名称} 取值 |
+|---|---|
+| 优先级特化 | <!-- TODO: 如「数据模型 > 时区 > 业务规则 > 历史兼容 > UI」 --> |
+| 推荐答案知识库 | <!-- TODO: 鉴权默认 / 时间字段默认 / 分页默认 / 错误码段位 --> |
+| 必问清单 | <!-- TODO: 项目特有的必问项 --> |
+| 归档位置 | 答完即落到 `01-需求内容.md` 第 6 章"已确认事项汇总" |
+
+## B4 接口文档（busi-api-spec）overlay
+
+<!-- TODO: 确认是「双产物模式」（markdown + 代码契约）还是「单产物模式」（仅 markdown） -->
+
+| 项 | {项目名称} 取值 |
+|---|---|
+| 输出位置 | <!-- TODO: `{iterate根目录}/v{X}/02-接口文档-内部.md` --> |
+| 内部 / 外部判定 | <!-- TODO: 判定规则 --> |
+| 路径前缀规则 | 见 `.agent/AGENT.md §B.3` |
+| 统一返回结构 | <!-- TODO: `Result<T>`（code/msg/data/trace） --> |
+| 错误码体系 | 见 coding-rules.md §15 |
+| 鉴权注解 | 见 coding-rules.md §6 |
+| Feign 模块归口 | <!-- TODO: `{项目}-feign/` 路径 --> |
+| 分页结构 | 见 coding-rules.md §11 |
+| 时间字段格式 | 见 coding-rules.md §10 |
+
+### B4-B 代码契约（如启用双产物模式）
+
+| 项 | {项目名称} 取值 |
+|---|---|
+| 产出范围 | `Form` / `VO` / `Controller` 类签名 + Swagger 注解 |
+| 包路径 | <!-- TODO: Controller / Form / VO 包路径 --> |
+| Controller 方法体 | `throw new UnsupportedOperationException("WIP - B7 实现");` |
+| **不产出** | `application/` / `domain/` / `infrastructure/` 任何代码 |
+
+## B5 设计文档（busi-design-doc）overlay
+
+| 项 | {项目名称} 取值 |
+|---|---|
+| 输出位置 | <!-- TODO: `{iterate根目录}/v{X}/03-设计文档.md` --> |
+| 输出形态 | <!-- TODO: Markdown + mermaid / HTML --> |
+| 数据模型 DDL | 必须给完整 `CREATE TABLE` 语句，含审计字段（与 BaseEntity 对齐） |
+| 状态机 | mermaid `stateDiagram-v2` + 状态值与 DB 字段值映射表 |
+| 时序图 | mermaid `sequenceDiagram` |
+| 异常边界必查 | <!-- TODO: 项目特有的异常类型，如空值 / 并发 / 超时 / 权限 / 历史兼容 / ... --> |
+| 决策权衡章节 | 至少包含：分层归属 / 数据归属 / 是否产生 Feign |
+
+## B6 AI 开发规格书（busi-dev-spec）overlay
+
+| 项 | {项目名称} 取值 |
+|---|---|
+| 输出位置 | <!-- TODO: `{iterate根目录}/v{X}/04-AI开发规格书.md` --> |
+| 职责边界 | 仅描述 B7 待实现部分。B4 已产出的不重复列出 |
+| 文件清单分模块 | <!-- TODO: 如多模块，按 `{项目}-common` / `{项目}-feign` / `{项目}-server` 分组 --> |
+| 类与方法签名格式 | 全限定类名 + 方法签名（含返回类型、参数类型、注解） |
+| 实施顺序拓扑 | mermaid `graph TD`，从下到上：domain → infrastructure → application → interfaces |
+
+## B7 编码循环（busi-dev-loop）overlay
+
+| 项 | {项目名称} 取值 |
+|---|---|
+| **启动前必问** | 编排器必须询问开发者姓名（格式见 coding-rules.md），作为新增文件 `@author` |
+| 阶段 0 接口骨架 | <!-- TODO: 如启用 B4 双产物，B7 仅补齐方法体；否则 B7 生成 Controller --> |
+| 编译验证命令 | <!-- TODO: `mvn -pl {模块} -am compile -DskipTests` --> |
+| 全测命令 | <!-- TODO: `mvn -pl {模块} -am test` --> |
+| TDD 框架 | <!-- TODO: JUnit 4 / JUnit 5 / Karate --> |
+| 集成测试启动 | <!-- TODO: `@SpringBootTest` + `@ActiveProfiles("test")` --> |
+| 失败循环触发 | 编译失败 ≥3 / 同测试 ≥3 / 改 A 坏 B 反复 → 强制 `systematic-debugging` |
+| 提交前命令 | <!-- TODO: `mvn -pl {模块} -am verify` --> |
+| **git commit message** | <!-- TODO: 中文/英文，格式：`<类型>(v{X}·{模块}): <B阶段>完成 - <描述>` --> |
+
+## B8 集成测试（busi-api-test）overlay
+
+| 项 | {项目名称} 取值 |
+|---|---|
+| 测试框架 | <!-- TODO: JUnit 4 + RestAssured / Karate / 其他 --> |
+| 输出位置 | <!-- TODO: `{项目}-server/src/test/java/.../it/{bc}/` --> |
+| 真实容器 | <!-- TODO: `@SpringBootTest(webEnvironment = RANDOM_PORT)` --> |
+| 数据准备 | <!-- TODO: `@Sql` 注解 / `data.sql` --> |
+| 跨服务依赖 | <!-- TODO: `@MockBean` mock Feign Client --> |
+| 覆盖矩阵硬约束 | 正向 / 边界 / 异常 / 兼容 / <!-- TODO: 项目特有维度 --> |
+
+## B9 版本收尾（busi-iter-summary）overlay
+
+| 项 | {项目名称} 取值 |
+|---|---|
+| 输出位置 | 版本总结 → <!-- TODO: `{iterate根目录}/v{X}/05-版本收尾.md` --> <br/> CHANGELOG → <!-- TODO: CHANGELOG 路径 --> |
+| 完整性审计 | <!-- TODO: 列出每模块必有的产物清单 --> |
+| 接口文档 vs 代码一致性 | 列举所有 `@RequestMapping` vs B4 文档条目，缺一不放行 |
+| CHANGELOG 标签 | <!-- TODO: Added / Changed / Database / Fixed / Config / Removed --> |
+| 推送命令 | <!-- TODO: `git push origin {feature-branch}` --> |
+
+## B10 流程编排器（busi-flow-orchestrator）overlay
+
+| 项 | {项目名称} 取值 |
+|---|---|
+| 状态文件路径 | <!-- TODO: `{iterate根目录}/v{X}/.flow-state.json`（已 gitignore） --> |
+| 触发词扩展 | <!-- TODO: 如"切到 v{X}" → 切换当前活跃版本 --> |
+| 检查点持有人 | <!-- TODO: C1/C2 → 谁审；C3/C4 → 谁审；C5 → 谁审 --> |

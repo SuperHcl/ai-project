@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BizFlow-8 · 通用 AI 业务开发流程仓 — 讲解</title>
+<style>
+  :root{
+    --bg:#0b1220;
+    --bg2:#0f1a2e;
+    --panel:#132038;
+    --line:#22334f;
+    --ink:#e8eef7;
+    --dim:#8fa3bd;
+    --accent:#4cc2ff;
+    --accent2:#39d98a;
+    --warn:#ffb454;
+    --danger:#ff6b6b;
+    --violet:#b18cff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;
+    overflow:hidden;
+  }
+  /* ---------- 幻灯片框架 ---------- */
+  .deck{width:100vw;height:100vh;position:relative;}
+  .slide{
+    position:absolute;inset:0;
+    display:none;
+    flex-direction:column;
+    padding:56px 72px 88px;
+    background:
+      radial-gradient(1200px 500px at 85% -10%, rgba(76,194,255,.08), transparent 60%),
+      radial-gradient(900px 400px at -10% 110%, rgba(57,217,138,.06), transparent 60%),
+      var(--bg);
+    animation:fadein .35s ease;
+  }
+  .slide.active{display:flex;}
+  @media print{
+    body{overflow:visible;}
+    .slide{position:relative;display:flex !important;page-break-after:always;height:100vh;animation:none;}
+    .nav,.pager,.hint,.progress{display:none !important;}
+  }
+  @keyframes fadein{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .slide-inner{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:1280px;width:100%;margin:0 auto;}
+
+  /* ---------- 通用排版 ---------- */
+  .kicker{
+    display:inline-block;font-size:14px;letter-spacing:3px;color:var(--accent);
+    border:1px solid var(--line);border-radius:999px;padding:5px 16px;margin-bottom:20px;
+    background:rgba(76,194,255,.06);width:fit-content;
+  }
+  h1{font-size:52px;line-height:1.25;margin-bottom:18px;font-weight:800;}
+  h2{font-size:36px;line-height:1.3;margin-bottom:10px;font-weight:800;}
+  h3{font-size:20px;margin-bottom:10px;color:var(--accent);}
+  .sub{font-size:19px;color:var(--dim);line-height:1.8;margin-bottom:8px;}
+  .mt{margin-top:22px;}
+  .accent{color:var(--accent);}
+  .green{color:var(--accent2);}
+  .warn{color:var(--warn);}
+  .violet{color:var(--violet);}
+  .danger{color:var(--danger);}
+
+  .grid{display:grid;gap:18px;}
+  .g2{grid-template-columns:1fr 1fr;}
+  .g3{grid-template-columns:1fr 1fr 1fr;}
+  .g4{grid-template-columns:repeat(4,1fr);}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:20px 22px;line-height:1.7;font-size:16px;
+  }
+  .card .t{font-size:17px;font-weight:700;margin-bottom:8px;}
+  .card .d{color:var(--dim);font-size:14.5px;line-height:1.7;}
+  .card.hl{border-color:var(--accent);box-shadow:0 0 0 1px rgba(76,194,255,.25), 0 8px 30px rgba(76,194,255,.06);}
+  .card.hl2{border-color:var(--accent2);box-shadow:0 0 0 1px rgba(57,217,138,.2);}
+  ul.clean{list-style:none;}
+  ul.clean li{padding:5px 0 5px 24px;position:relative;font-size:16.5px;line-height:1.65;}
+  ul.clean li::before{content:"▸";position:absolute;left:2px;color:var(--accent);}
+  ul.clean li.x::before{content:"✕";color:var(--danger);}
+  ul.clean li.ok::before{content:"✓";color:var(--accent2);}
+  ul.clean li.q::before{content:"?";color:var(--warn);font-weight:700;}
+
+  .tag{display:inline-block;font-size:12.5px;border:1px solid var(--line);border-radius:6px;padding:2px 9px;color:var(--dim);background:rgba(255,255,255,.03);margin-right:6px;}
+  .tag.b{color:var(--accent);border-color:rgba(76,194,255,.4);}
+  .tag.g{color:var(--accent2);border-color:rgba(57,217,138,.4);}
+  .tag.o{color:var(--warn);border-color:rgba(255,180,84,.4);}
+  .tag.v{color:var(--violet);border-color:rgba(177,140,255,.4);}
+  .tag.r{color:var(--danger);border-color:rgba(255,107,107,.4);}
+
+  code,.mono{font-family:"Cascadia Code","JetBrains Mono",Consolas,monospace;}
+  .code{
+    background:#0a1322;border:1px solid var(--line);border-radius:12px;
+    padding:18px 22px;font-size:15px;line-height:1.75;color:#c9dcf2;
+    overflow:auto;white-space:pre-wrap;font-family:"Cascadia Code","JetBrains Mono",Consolas,monospace;
+  }
+  .code .c{color:#5b7394;}
+  .code .k{color:var(--accent);}
+  .code .g{color:var(--accent2);}
+  .code .o{color:var(--warn);}
+
+  table.tb{width:100%;border-collapse:collapse;font-size:15px;}
+  table.tb th{
+    text-align:left;color:var(--accent);font-weight:700;padding:10px 12px;
+    border-bottom:2px solid var(--line);font-size:14px;letter-spacing:1px;
+  }
+  table.tb td{padding:9px 12px;border-bottom:1px solid var(--line);color:#cfdaea;line-height:1.55;}
+  table.tb tr:hover td{background:rgba(76,194,255,.04);}
+
+  .quote{
+    border-left:4px solid var(--accent);background:rgba(76,194,255,.05);
+    padding:16px 22px;border-radius:0 12px 12px 0;font-size:17px;line-height:1.8;color:#d5e4f7;
+  }
+  .big-num{font-size:44px;font-weight:800;color:var(--accent);line-height:1;}
+
+  /* ---------- 封面 ---------- */
+  .cover{text-align:left;}
+  .cover .logo{
+    font-size:15px;letter-spacing:4px;color:var(--dim);margin-bottom:26px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .cover .logo::before{content:"";width:42px;height:2px;background:var(--accent);display:inline-block;}
+  .cover h1{font-size:64px;}
+  .cover .alias{
+    font-size:22px;color:var(--accent);font-weight:700;margin:6px 0 20px;letter-spacing:1px;
+  }
+  .cover .meta{margin-top:40px;color:var(--dim);font-size:15px;display:flex;gap:26px;flex-wrap:wrap;}
+  .cover .meta span{border:1px solid var(--line);border-radius:8px;padding:6px 14px;background:var(--panel);}
+
+  /* ---------- 流程图 ---------- */
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:center;}
+  .fnode{
+    background:var(--panel);border:1.5px solid var(--line);border-radius:12px;
+    padding:12px 16px;text-align:center;min-width:118px;
+  }
+  .fnode .n{font-size:12px;color:var(--dim);letter-spacing:1px;}
+  .fnode .v{font-size:15.5px;font-weight:700;margin-top:3px;}
+  .fnode .s{font-size:11.5px;color:var(--accent);margin-top:3px;font-family:Consolas,monospace;}
+  .fnode.cp{border-color:var(--warn);background:rgba(255,180,84,.07);min-width:auto;padding:10px 13px;}
+  .fnode.cp .v{color:var(--warn);font-size:13.5px;}
+  .fnode.pre{border-style:dashed;border-color:var(--violet);}
+  .fnode.pre .s{color:var(--violet);}
+  .farrow{color:var(--accent);font-size:20px;font-weight:700;}
+  .frow{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;flex-wrap:wrap;margin:7px 0;}
+
+  /* ---------- 步骤卡 ---------- */
+  .step{
+    display:flex;gap:18px;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:18px 22px;align-items:flex-start;
+  }
+  .step .no{
+    flex:none;width:46px;height:46px;border-radius:12px;background:rgba(76,194,255,.1);
+    border:1.5px solid var(--accent);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;
+  }
+  .step .body{flex:1;}
+  .step .name{font-size:18px;font-weight:700;}
+  .step .sk{font-size:13px;color:var(--accent);font-family:Consolas,monospace;margin:2px 0 8px;}
+  .step .io{display:flex;gap:20px;flex-wrap:wrap;font-size:14px;color:var(--dim);line-height:1.6;}
+  .step .io b{color:#c8d8ec;font-weight:600;}
+  .step .trig{margin-top:8px;}
+
+  /* ---------- 章节页 ---------- */
+  .section-page{text-align:center;align-items:center;}
+  .section-page .num{font-size:110px;font-weight:800;color:rgba(76,194,255,.12);line-height:1;}
+  .section-page h2{font-size:46px;margin-top:-34px;}
+  .section-page .sub{margin-top:14px;font-size:18px;}
+
+  /* ---------- 导航控件 ---------- */
+  .nav{
+    position:fixed;bottom:26px;right:32px;display:flex;gap:10px;z-index:50;
+  }
+  .nav button{
+    width:46px;height:46px;border-radius:12px;border:1px solid var(--line);
+    background:var(--panel);color:var(--ink);font-size:19px;cursor:pointer;
+    transition:.15s;
+  }
+  .nav button:hover{border-color:var(--accent);color:var(--accent);}
+  .progress{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;z-index:60;transition:width .25s;}
+  .pager{
+    position:fixed;bottom:34px;left:36px;color:var(--dim);font-size:14px;z-index:50;
+    font-family:Consolas,monospace;letter-spacing:1px;
+  }
+  .hint{
+    position:fixed;bottom:8px;right:36px;color:#435672;font-size:12px;z-index:50;
+  }
+  .toc-list{display:grid;grid-template-columns:1fr 1fr;gap:14px 40px;margin-top:30px;}
+  .toc-item{display:flex;gap:16px;align-items:baseline;font-size:19px;padding:10px 0;border-bottom:1px dashed var(--line);}
+  .toc-item .no{color:var(--accent);font-family:Consolas,monospace;font-size:16px;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="deck" id="deck">
+
+<!-- ============ 1. 封面 ============ -->
+<section class="slide">
+  <div class="slide-inner cover">
+    <div class="logo">AGENT-BASE-BUSI-FLOW · 项目讲解</div>
+    <h1>通用 AI 业务开发流程仓</h1>
+    <div class="alias">BizFlow-8 —— 让 AI 按人类的标准流程做开发</div>
+    <p class="sub" style="max-width:840px;">
+      一套<b class="accent">项目无关</b>的 AI 协作开发 SOP：需求解析 → 澄清 → 接口文档 → 设计 → 编码 → 测试 → 沉淀，
+      完整 8 步流程 + 5 道人工审查卡口，把"对话式碰运气"变成"流程化可预期"。
+    </p>
+    <div class="meta">
+      <span>技术栈：Java / Spring</span>
+      <span>载体：Qoder Skills + Rules</span>
+      <span>落地验证：OCS 海外报关系统</span>
+      <span>2026-07</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. 目录 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">CONTENTS</span>
+    <h2>今天讲什么</h2>
+    <div class="toc-list">
+      <div class="toc-item"><span class="no">01</span><span>创作背景 —— 对话式 AI 开发之痛</span></div>
+      <div class="toc-item"><span class="no">02</span><span>原始想法 —— 把人类开发流程交给 AI</span></div>
+      <div class="toc-item"><span class="no">03</span><span>方案总览 —— BizFlow-8 是什么</span></div>
+      <div class="toc-item"><span class="no">04</span><span>核心机制 —— 8 步流程与 5 道卡口</span></div>
+      <div class="toc-item"><span class="no">05</span><span>怎么使用 —— 三分钟接入新项目</span></div>
+      <div class="toc-item"><span class="no">06</span><span>落地与演进 —— 验证案例与规划</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. 章节页：背景 ============ -->
+<section class="slide section-page">
+  <div class="slide-inner" style="align-items:center;">
+    <div class="num">01</div>
+    <h2>创作背景</h2>
+    <p class="sub">为什么要有这套东西？—— 从一次真实的痛感出发</p>
+  </div>
+</section>
+
+<!-- ============ 4. 背景：现状 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">01 · 创作背景</span>
+    <h2>现状：对话式使用 AI，没有形成流程</h2>
+    <p class="sub">目前在用 AI 做功能开发时，典型的工作方式是这样的：</p>
+    <div class="flow mt">
+      <div class="fnode"><div class="n">STEP 1</div><div class="v">粘贴需求文档</div><div class="s">整段文字喂给 AI</s></div></div>
+      <div class="farrow">→</div>
+      <div class="fnode"><div class="n">STEP 2</div><div class="v">AI 自行理解</div><div class="s">对比现有代码</s></div></div>
+      <div class="farrow">→</div>
+      <div class="fnode"><div class="n">STEP 3</div><div class="v">给出实现逻辑</div><div class="s">直接开始写</s></div></div>
+      <div class="farrow">→</div>
+      <div class="fnode"><div class="n">STEP 4</div><div class="v">来回调整</div><div class="s">反复改 N 轮</s></div></div>
+    </div>
+    <div class="grid g3 mt">
+      <div class="card">
+        <div class="t danger">方式粗糙</div>
+        <div class="d">需求没有结构化解析，AI 理解靠"悟性"，遗漏与误读频发</div>
+      </div>
+      <div class="card">
+        <div class="t danger">不符合预期</div>
+        <div class="d">代码风格、包结构、项目规范全不对，需要人类反复纠正</div>
+      </div>
+      <div class="card">
+        <div class="t danger">没有沉淀</div>
+        <div class="d">每次开发都是从零对话，上次踩过的坑下次再踩一遍</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. 背景：结果 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">01 · 创作背景</span>
+    <h2>这种方式的实际效果</h2>
+    <div class="grid g2 mt" style="align-items:stretch;">
+      <div class="card" style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;">
+        <div class="big-num warn">70% ~ 80%</div>
+        <div class="d mt" style="font-size:16px;">最终成果预估只能达到预期效果的比例<br>剩下 20%~30% 靠人类手工补齐</div>
+      </div>
+      <div class="card">
+        <div class="t">痛点归因</div>
+        <ul class="clean" style="margin-top:6px;">
+          <li class="x">需求直接进入编码，<b>缺少澄清环节</b>，理解偏差到代码层才暴露</li>
+          <li class="x">AI 不知道项目的<b>结构、规范、约束</b>，产出与环境格格不入</li>
+          <li class="x">没有<b>审查卡口</b>，错误一路传导到测试甚至上线</li>
+          <li class="x">过程无文档沉淀，<b>经验无法复用</b>，下次迭代重来</li>
+          <li class="x">对话状态易丢失，中断后<b>无法恢复</b>进度</li>
+        </ul>
+      </div>
+    </div>
+    <div class="quote mt">
+      根因不是 AI 不够聪明，而是<span class="accent">我们把"人用的开发流程"省略了，直接让 AI 跳到了编码</span>。
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. 章节页：原始想法 ============ -->
+<section class="slide section-page">
+  <div class="slide-inner" style="align-items:center;">
+    <div class="num">02</div>
+    <h2>原始想法</h2>
+    <p class="sub">如果 AI 能像人一样，走完一套标准开发流程呢？</p>
+  </div>
+</section>
+
+<!-- ============ 7. 原始想法：思考 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">02 · 原始想法</span>
+    <h2>核心思考：一个朴素的问题</h2>
+    <div class="quote mt" style="font-size:21px;padding:26px 30px;">
+      如果能够把 AI 建设成一个<span class="accent">标准的</span>、<span class="accent">高效的</span>、<span class="accent">人为操作少的</span>辅助工具呢？
+    </div>
+    <div class="grid g2 mt">
+      <div class="card hl">
+        <div class="t">参照系：人类开发者的标准流程</div>
+        <div class="d">
+          一个靠谱的人类开发者拿到需求后，<b>不会立刻写代码</b>——他会先读需求、问问题、画设计、评审、再编码、再测试、最后总结。
+          <br><br>这套流程是几十年软件工程沉淀下来的质量保障体系。<b class="green">AI 也应该走同样的路。</b>
+        </div>
+      </div>
+      <div class="card">
+        <div class="t">两个关键转变</div>
+        <ul class="clean" style="margin-top:6px;">
+          <li><b>从"聊天"到"流程"</b>：把一次性对话，变成有阶段、有产物、有卡口的流水线</li>
+          <li><b>从"AI 猜"到"AI 问"</b>：不确定的地方主动反问人类，而不是自己默默假设</li>
+        </ul>
+        <div class="d mt">预期不是让 AI 取代人，而是让人只在<b>关键决策点</b>出现，其余环节 AI 自动流转。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8. 原始想法：预期 8 步 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">02 · 原始想法</span>
+    <h2>最初设想的 8 个预期（第一版草图）</h2>
+    <p class="sub">创作之初写下的预期流程 —— 以人类角度制定的标准开发流程：</p>
+    <div class="grid g2 mt" style="gap:12px;">
+      <ul class="clean">
+        <li><b>1.</b> AI 自己解析需求文档并进行分析</li>
+        <li><b>2.</b> 对需求提出疑问，与人类一问一答，直到完全理解</li>
+        <li><b>3.</b> 输出接口文档（评估需要接口的话）</li>
+        <li><b>4.</b> 输出符合《项目规范》的设计文档 —— <span class="green">给人看</span>（前端 / 测试）</li>
+      </ul>
+      <ul class="clean">
+        <li><b>5.</b> 输出更符合 AI 理解的设计文档 —— <span class="violet">给 AI 看</span>（若与人版趋同可合并）</li>
+        <li><b>6.</b> 开始编码，符合项目结构与编码规范（规则由人类制定）</li>
+        <li><b>7.</b> 单元测试、整体测试</li>
+        <li><b>8.</b> 需求总结、改动总结 —— 沉淀给下次迭代</li>
+      </ul>
+    </div>
+    <div class="card mt hl2">
+      <div class="t green">回头看：这份草图与最终落地几乎一一对应</div>
+      <div class="d">预期 1~8 → 落地为 B2~B9 八个流程 Skill；其中第 5 步"AI 版设计文档"被保留为独立产物（B6 AI 开发规格书），实践证明两份文档读者不同、粒度不同，<b>没有合并</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 9. 原始想法：前提与目标 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">02 · 原始想法</span>
+    <h2>达成预期的前提 & 建设目标</h2>
+    <div class="grid g2 mt">
+      <div>
+        <h3>前提：AI 需要先"认识"项目</h3>
+        <div class="card">
+          <ul class="clean">
+            <li>AI 需要知道项目的<b>结构和规范</b>才能写出合群的代码</li>
+            <li>通过全局分析对项目做了解和沉淀：wiki、AGENTS 文件等</li>
+            <li>包结构、分层模式、编码规范、硬约束 —— 人类制定规则，AI 遵守规则</li>
+          </ul>
+        </div>
+        <div class="quote mt" style="font-size:15.5px;">
+          这就是后来的 <span class="accent">.agent/ overlay</span> 机制：项目特化知识以文件形式注入，通用流程不污染。
+        </div>
+      </div>
+      <div>
+        <h3>四个建设目标</h3>
+        <div class="grid" style="gap:12px;">
+          <div class="card"><div class="t">① 先建通用流程</div><div class="d">做一个项目无关的、符合预期的 agent 流程骨架</div></div>
+          <div class="card"><div class="t">② 一键应用到业务服务</div><div class="d">类似 QuickStart 的一键安装，先把基础能力建设好（设计模板、编码规范），再执行各步骤</div></div>
+          <div class="card"><div class="t">③ 步骤借力"工具类"</div><div class="d">各步骤使用或创建通用 Skill / MCP 之类的工具能力</div></div>
+          <div class="card"><div class="t">④ 人类把握边界</div><div class="d">不确定的点通过 grill-me 式 QA 及时咨询人类，规则与边界由人制定</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 10. 原始想法：设计参考 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">02 · 原始想法</span>
+    <h2>设计参考：站在成熟方案的肩膀上</h2>
+    <div class="grid g2 mt">
+      <div class="card hl">
+        <div class="t"><span class="tag b">参考 1</span> superpowers 架构</div>
+        <div class="d">
+          建设过程中参考 superpowers 的架构与实现方式：
+        </div>
+        <ul class="clean" style="margin-top:8px;">
+          <li><b>Skill 化组织</b>：每个能力一个独立 SKILL.md，关键词触发</li>
+          <li><b>渐进式披露</b>：不一次性堆全量上下文，用到才加载</li>
+          <li><b>元技能调度</b>：由一个总控 Skill 编排其他 Skill</li>
+        </ul>
+      </div>
+      <div class="card hl2">
+        <div class="t"><span class="tag g">参考 2</span> grill-me 拷问机制</div>
+        <div class="d">
+          流程中需要人类制定规则、边界的环节，采用 grill-me 式一问一答：
+        </div>
+        <ul class="clean" style="margin-top:8px;">
+          <li><b>逐题拷问</b>：一次 1~3 个强相关问题，不甩问题清单</li>
+          <li><b>每题带推荐答案</b>：并说明理由与影响面</li>
+          <li><b>答到共识为止</b>：所有不确定点落到文档，不留模糊</li>
+        </ul>
+      </div>
+    </div>
+    <div class="quote mt">
+      这两条参考直接塑造了 BizFlow-8 的形态：<span class="accent">Skill 化的流程步骤</span> + <span class="green">贯穿全程的澄清交互</span>。
+    </div>
+  </div>
+</section>
+
+<!-- ============ 11. 章节页：方案总览 ============ -->
+<section class="slide section-page">
+  <div class="slide-inner" style="align-items:center;">
+    <div class="num">03</div>
+    <h2>方案总览</h2>
+    <p class="sub">BizFlow-8 是什么？一套项目无关的 AI 开发协作骨架</p>
+  </div>
+</section>
+
+<!-- ============ 12. 是什么 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">03 · 方案总览</span>
+    <h2>BizFlow-8 = 业务流（BusinessFlow）+ 8 步流程</h2>
+    <p class="sub">物理仓库名 <span class="mono accent">agent-base-busi-flow</span>，沟通 / 文档 / PR 标签统一用别名 <b class="accent">BizFlow-8</b></p>
+    <div class="grid g2 mt">
+      <div class="card hl">
+        <div class="t">一句话定义</div>
+        <div class="d" style="font-size:16px;">
+          Java / Spring 技术栈下的<b>标准化 AI 协作开发 SOP</b>，支撑
+          "需求解析 → 澄清 → 接口文档 → 前置设计 → 编码 → 测试 → 沉淀" 完整 8 步流程。
+          <br><br><b class="green">项目无关</b> —— 让 AI 在不同业务服务里都能按同一套流程办事。
+        </div>
+      </div>
+      <div class="card">
+        <div class="t">仓库里有什么</div>
+        <ul class="clean" style="margin-top:6px;">
+          <li><span class="mono accent">rules/</span> — 跨项目通用的 Agent 行为准则（自动加载）</li>
+          <li><span class="mono accent">skills/</span> — 9 个流程 Skill + 1 个总编排 + 1 个项目初始化</li>
+          <li><span class="mono accent">templates/</span> — 版本迭代交付物模板（项目无关）</li>
+          <li><span class="mono accent">scripts/</span> — QuickStart 一键安装脚本 install.ps1</li>
+          <li><span class="mono accent">docs/</span> — 流程总览与安装指南</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 13. 架构：通用仓 + overlay ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">03 · 方案总览</span>
+    <h2>架构核心：通用仓 + 业务侧 overlay 注入</h2>
+    <p class="sub">通用流程不下沉业务知识；项目特化内容通过业务服务侧 <span class="mono accent">.agent/</span> 注入，不污染通用仓库</p>
+    <div class="grid g2 mt">
+      <div class="card hl">
+        <div class="t"><span class="tag b">通用仓</span> agent-base-busi-flow</div>
+        <ul class="clean" style="margin-top:6px;">
+          <li>8 步流程怎么走（Skill 逻辑）</li>
+          <li>行为红线与文档规范（rules/AGENT.md）</li>
+          <li>阿里 Java 手册强制条款基线</li>
+          <li>AI 编码通病防护</li>
+          <li>版本产物模板（项目无关）</li>
+        </ul>
+        <div class="d mt" style="color:var(--accent);">一份维护，全公司项目复用</div>
+      </div>
+      <div class="card hl2">
+        <div class="t"><span class="tag g">业务服务侧</span> .agent/ overlay（3 个文件）</div>
+        <ul class="clean" style="margin-top:6px;">
+          <li><span class="mono green">AGENT.md</span> — 模块边界、包路径前缀、接口前缀、文档落地位置</li>
+          <li><span class="mono green">coding-rules.md</span> — 工具选型、分层模式、BaseEntity、鉴权、Feign 归口</li>
+          <li><span class="mono green">overlay-spec.md</span> — iterate 根目录、版本号规则、测试框架</li>
+        </ul>
+        <div class="d mt" style="color:var(--accent2);">项目特化约束，优先级高于通用规则</div>
+      </div>
+    </div>
+    <div class="quote mt">overlay 未就绪时各 Skill 缺少项目特化约束（包路径、分层模式、文档位置），<b>产出质量会下降</b> —— 所以安装后第一件事就是初始化 overlay。</div>
+  </div>
+</section>
+
+<!-- ============ 14. 设计哲学 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">03 · 方案总览</span>
+    <h2>设计哲学：四条核心理念</h2>
+    <div class="grid g2 mt">
+      <div class="card">
+        <div class="t accent">上下文即稀缺资源</div>
+        <div class="d">Skill 只记 Agent 无法从代码推断的<b>隐式知识</b>（规则、约定、边界），能从代码读出来的一律不写，避免上下文膨胀</div>
+      </div>
+      <div class="card">
+        <div class="t accent">渐进式披露</div>
+        <div class="d">关键词触发才加载对应 Skill，不一次性堆全量上下文；模板抽离到 references/，触发即吃的上下文密度提升 2.2×</div>
+      </div>
+      <div class="card">
+        <div class="t accent">人工审查检查点</div>
+        <div class="d">设计评审 / 接口骨架评审 / 测试通过等 <b>5 道卡口</b>，AI 不擅自越过；人类只在关键决策点出现</div>
+      </div>
+      <div class="card">
+        <div class="t accent">三条红线</div>
+        <div class="d"><b>先想再写</b>（不假设、暴露困惑）、<b>最小代码量</b>（零投机、复用优先）、<b>精准改动</b>（diff 每行可追溯到需求）</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 15. 8 步流程全景 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">04 · 核心机制</span>
+    <h2>8 步流程全景图</h2>
+    <div class="mt">
+      <div class="frow">
+        <div class="fnode pre"><div class="n">前置</div><div class="v">项目初始化</div><div class="s">busi-project-init</div></div>
+        <div class="farrow">⇢</div>
+        <div class="fnode"><div class="n">B2</div><div class="v">解析需求</div><div class="s">busi-req-analyze</div></div>
+        <div class="farrow">→</div>
+        <div class="fnode"><div class="n">B3</div><div class="v">澄清交互</div><div class="s">busi-req-clarify</div></div>
+        <div class="farrow">→</div>
+        <div class="fnode"><div class="n">B4</div><div class="v">接口文档</div><div class="s">busi-api-spec</div></div>
+        <div class="farrow">→</div>
+        <div class="fnode cp"><div class="v">🚦 C1 接口评审</div></div>
+      </div>
+      <div class="frow">
+        <div class="fnode"><div class="n">B5</div><div class="v">人类设计文档</div><div class="s">busi-design-doc</div></div>
+        <div class="farrow">→</div>
+        <div class="fnode cp"><div class="v">🚦 C2 设计评审</div></div>
+        <div class="farrow">→</div>
+        <div class="fnode"><div class="n">B6</div><div class="v">AI 开发规格书</div><div class="s">busi-dev-spec</div></div>
+        <div class="farrow">→</div>
+        <div class="fnode"><div class="n">B7</div><div class="v">编码循环</div><div class="s">busi-dev-loop</div></div>
+        <div class="farrow">→</div>
+        <div class="fnode cp"><div class="v">🚦 C3 编码评审</div></div>
+      </div>
+      <div class="frow">
+        <div class="fnode"><div class="n">B8</div><div class="v">集成测试</div><div class="s">busi-api-test</div></div>
+        <div class="farrow">→</div>
+        <div class="fnode cp"><div class="v">🚦 C4 测试评审</div></div>
+        <div class="farrow">→</div>
+        <div class="fnode"><div class="n">B9</div><div class="v">总结沉淀</div><div class="s">busi-iter-summary</div></div>
+        <div class="farrow">→</div>
+        <div class="fnode cp"><div class="v">🚦 C5 发布终审</div></div>
+        <div class="farrow">→</div>
+        <div class="fnode" style="border-color:var(--accent2);"><div class="v green">版本完成</div><div class="s">统一 push</div></div>
+      </div>
+    </div>
+    <div class="grid g3 mt" style="gap:12px;">
+      <div class="card" style="padding:12px 16px;font-size:14px;"><span class="violet">B1 busi-coding-rules</span> 是 always-on 编码基线，B7 写代码时自动加载，不在链上</div>
+      <div class="card" style="padding:12px 16px;font-size:14px;"><span class="accent">busi-flow-orchestrator</span> 总编排器：调度 B2-B9、维护进度状态、把守 5 道卡口</div>
+      <div class="card" style="padding:12px 16px;font-size:14px;">评审<b>不通过可回退</b>到前面任意步骤重做，流程支持中断恢复</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 16. 步骤详解 1 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">04 · 核心机制</span>
+    <h2>起步：初始化 → 解析需求 → 澄清</h2>
+    <div class="grid mt" style="gap:14px;">
+      <div class="step">
+        <div class="no" style="border-color:var(--violet);color:var(--violet);background:rgba(177,140,255,.08);">0</div>
+        <div class="body">
+          <div class="name">项目初始化（前置，不属于 8 步链）</div>
+          <div class="sk">busi-project-init · 触发词："初始化项目"</div>
+          <div class="io"><span><b>职责：</b>检测并生成 .agent/ 下 3 个 overlay 文件；自动探测项目结构（模块 / 包路径 / 技术栈），交互式询问关键信息，生成带预填值的 overlay</span></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="no">1</div>
+        <div class="body">
+          <div class="name">解析需求</div>
+          <div class="sk">busi-req-analyze · 触发词："解析需求"、"分析需求文档"</div>
+          <div class="io">
+            <span><b>输入：</b>.docx / .md 文件、Confluence 链接、粘贴文本、口述需求</span>
+            <span><b>输出：</b><span class="mono">iterate/v{版本}/01-需求内容.md</span> —— 结构化需求（背景 / 目标 / 范围 / 验收标准 / 待确认事项）</span>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="no">2</div>
+        <div class="body">
+          <div class="name">澄清交互 <span class="tag g">关键差异化能力</span></div>
+          <div class="sk">busi-req-clarify · 触发词："澄清需求"、"需求拷问"</div>
+          <div class="io">
+            <span><b>风格：</b>参考 grill-me，一次 1~3 个强相关问题，每题带推荐答案 + 影响面，答完即落库</span>
+            <span><b>输出：</b>需求文档中所有 ❓ 全部确认，Q&A 归档</span>
+          </div>
+          <div class="trig"><span class="tag o">不替用户拍板：回答含糊时复述确认，仍含糊则标记留下</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 17. 步骤详解 2 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">04 · 核心机制</span>
+    <h2>契约：接口文档 → 人类设计文档</h2>
+    <div class="grid mt" style="gap:14px;">
+      <div class="step">
+        <div class="no">3</div>
+        <div class="body">
+          <div class="name">接口文档 <span class="tag o">出口设 C1 卡口</span></div>
+          <div class="sk">busi-api-spec · 触发词："接口文档"、"接口设计"</div>
+          <div class="io">
+            <span><b>定位：</b>只产"契约"不产"实现" —— 方法签名 / 路径 / 出入参 / 鉴权 / 错误码</span>
+            <span><b>输出：</b><span class="mono">02-接口文档-内部.md</span>（前端 HTTP 调用）+ <span class="mono">02-接口文档-外部.md</span>（跨服务 Feign）</span>
+          </div>
+          <div class="trig"><span class="tag b">签名锁定后前端可并行 mock 开发</span><span class="tag b">可选双产物：同步生成 Form/VO/Controller 占位代码</span></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="no">4</div>
+        <div class="body">
+          <div class="name">人类设计文档 <span class="tag o">出口设 C2 卡口</span></div>
+          <div class="sk">busi-design-doc · 触发词："设计文档"、"design doc"</div>
+          <div class="io">
+            <span><b>读者：</b>前端 / 测试 / 后端 reviewer —— 讲"为什么这么做"，图为主</span>
+            <span><b>内容：</b>业务流程图、时序图、数据模型 ER/DDL、字段中文释义、状态机、决策权衡、异常边界、测试要点</span>
+          </div>
+          <div class="trig"><span class="tag r">DDL 边界：人类提供的既有表结构 AI 仅自审不擅改，违例汇总待 C1 裁决</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="quote mt">设计评审（C2）由<b>前端 + 测试 + reviewer 三角度</b>会审 —— 通过后才允许进入编码准备阶段。这是质量最关键的一道闸门。</div>
+  </div>
+</section>
+
+<!-- ============ 18. 步骤详解 3 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">04 · 核心机制</span>
+    <h2>落地：AI 规格书 → 编码循环</h2>
+    <div class="grid mt" style="gap:14px;">
+      <div class="step">
+        <div class="no">5</div>
+        <div class="body">
+          <div class="name">AI 开发规格书 <span class="tag v">专给编码 AI 看</span></div>
+          <div class="sk">busi-dev-spec · 触发词："写规格书"、"dev spec"</div>
+          <div class="io">
+            <span><b>定位：</b>把前面所有产物收敛成工程装配清单 —— 文件级路径、类与方法签名、实施顺序（编译可过的拓扑序）、TDD 用例清单</span>
+            <span><b>强约束：</b>不重抄 B5 内容（DDL / 权衡 / 流程图全部引用回 B5），只产 B5 没给的东西</span>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="no">6</div>
+        <div class="body">
+          <div class="name">编码循环 <span class="tag o">出口设 C3 卡口</span></div>
+          <div class="sk">busi-dev-loop · 触发词："接口骨架"、"开始开发"</div>
+          <div class="io">
+            <span><b>阶段 0 接口骨架：</b>仅生成 Controller 签名 + VO/DTO/Form，mvn compile 通过 → <b>人工小卡口</b>确认契约</span>
+            <span><b>阶段 1+2 TDD 红绿：</b>单功能小步循环（编码 → 编译 → 测试 → 提交），自动加载 busi-coding-rules</span>
+          </div>
+          <div class="trig">
+            <span class="tag b">协同：test-driven-development</span>
+            <span class="tag b">卡死 2 轮 → systematic-debugging</span>
+            <span class="tag b">提交前 → verification-before-completion</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="quote mt">内置 <span class="warn">AI 死循环脱困机制</span>：编译 / 测试失败 ≥2 轮时强制系统性排查，<b>禁止盲改</b>；跑通验证命令才允许宣称"完成"。</div>
+  </div>
+</section>
+
+<!-- ============ 19. 步骤详解 4 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">04 · 核心机制</span>
+    <h2>收官：集成测试 → 总结沉淀</h2>
+    <div class="grid mt" style="gap:14px;">
+      <div class="step">
+        <div class="no">7</div>
+        <div class="body">
+          <div class="name">API 集成与回归测试 <span class="tag o">出口设 C4 卡口</span></div>
+          <div class="sk">busi-api-test · 触发词："生成测试"、"接口测试"</div>
+          <div class="io">
+            <span><b>范围：</b>端到端链路 / 跨需求集成 / 历史回归 / 边界压测（不重复 B7 单测）</span>
+            <span><b>方式：</b>默认 Karate，最大 3 轮修复循环；失败分类处理 —— 代码 Bug / 用例问题 / 设计缺陷（设计缺陷回退 B4/B5）</span>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="no">8</div>
+        <div class="body">
+          <div class="name">总结沉淀 <span class="tag o">push 前设 C5 终审</span></div>
+          <div class="sk">busi-iter-summary · 触发词："迭代总结"、"沉淀"、"收官"</div>
+          <div class="io">
+            <span><b>5 个职责：</b>完整性审计（B2-B8 产物齐不齐）→ CHANGELOG 生成 → 遗留待澄清沉淀 → AI 自反思踩坑 → 统一 git push</span>
+            <span><b>产出：</b>迭代总结（需求实现回顾 / 改动清单 / 设计与实现差异 / 下次迭代 AI 该知道的事）</span>
+          </div>
+          <div class="trig"><span class="tag r">B7 只 commit 不 push —— 由 B9 统一推送，避免半成品上 main</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="quote mt">前 7 步关注"<b>做对单个版本</b>"，第 8 步关注"<span class="green">沉淀给下个版本</span>" —— 这是经验可复用、AI 越用越聪明的关键。</div>
+  </div>
+</section>
+
+<!-- ============ 20. 双设计文档 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">04 · 核心机制</span>
+    <h2>为什么要两份设计文档？</h2>
+    <p class="sub">原始想法中的疑问："AI 的和人类的设计文档如果差不多就合并" —— 实践证明<span class="warn">不能合</span>，读者与粒度完全不同</p>
+    <div class="grid g2 mt">
+      <div class="card hl2">
+        <div class="t"><span class="tag g">B5</span> 人类设计文档 —— 给人看</div>
+        <ul class="clean" style="margin-top:6px;">
+          <li>讲"<b>为什么这么做</b>"：背景、权衡、取舍</li>
+          <li>图为主：流程图 / 时序图 / ER / 状态机</li>
+          <li>读者：前端拿契约与状态、测试拿用例边界、reviewer 审方案</li>
+          <li>评审会上被逐行挑战的文档</li>
+        </ul>
+      </div>
+      <div class="card" style="border-color:var(--violet);">
+        <div class="t"><span class="tag v">B6</span> AI 开发规格书 —— 给 AI 看</div>
+        <ul class="clean" style="margin-top:6px;">
+          <li>讲"<b>具体怎么改</b>"：路径 + 签名 + 约束</li>
+          <li>清单为主：文件路径级清单 / 类方法签名 / 编译可过拓扑序 / TDD 用例</li>
+          <li>读者：B7 编码 AI —— 表达更刚性、粒度更细</li>
+          <li>不重抄 B5：已有内容一律引用，避免双写漂移</li>
+        </ul>
+      </div>
+    </div>
+    <div class="quote mt">一句话区分：<span class="green">B5 说服人</span>，<span class="violet">B6 驱动机器</span>。若合并，人会嫌啰嗦、AI 会缺约束。</div>
+  </div>
+</section>
+
+<!-- ============ 21. 5 道检查点 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">04 · 核心机制</span>
+    <h2>5 道人工审查检查点 —— 人类的存在感在这里</h2>
+    <table class="tb mt">
+      <tr><th style="width:70px;">编号</th><th>位置</th><th>主审角色</th><th>检查重点</th></tr>
+      <tr><td><span class="tag o">C1</span></td><td>B4 接口文档出口</td><td>后端 reviewer + 前端</td><td>接口路径 / 字段类型 / 鉴权 / 错误码</td></tr>
+      <tr><td><span class="tag o">C2</span></td><td>B5 设计文档出口</td><td>前端 + 测试 + reviewer 三角度</td><td>DDL / 决策权衡 / 异常 6 类 / 测试要点</td></tr>
+      <tr><td><span class="tag o">C3</span></td><td>B7 编码出口（含阶段 0 骨架小卡口）</td><td>reviewer</td><td>编码 + 单测全过 / 实施顺序符合规格书</td></tr>
+      <tr><td><span class="tag o">C4</span></td><td>B8 集成测试出口</td><td>测试 + reviewer</td><td>集成测试全绿 / 覆盖矩阵 5 类齐</td></tr>
+      <tr><td><span class="tag o">C5</span></td><td>B9 push 之前</td><td>用户最终决定者</td><td>完整性审计 / CHANGELOG / 无遗留 ❓</td></tr>
+    </table>
+    <div class="grid g2 mt">
+      <div class="card">
+        <div class="t">统一展示模板</div>
+        <div class="d">每道卡口按固定格式输出：本步产物 → 自检通过项 → 遗留待跟进 → 建议主审角色 → 等用户回复 <span class="mono green">"OK"</span> 或 <span class="mono danger">"不过 + 意见"</span></div>
+      </div>
+      <div class="card">
+        <div class="t danger">绝对禁止</div>
+        <div class="d">跳过检查点自动进入下一步。即使用户连续说"继续"，到达卡口时编排器<b>必须强制停下</b>等显式确认 —— 防"一路冲到上线"事故。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 22. 编排器 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">04 · 核心机制</span>
+    <h2>流程编排器：让 3 天后的你能接上进度</h2>
+    <p class="sub"><span class="mono accent">busi-flow-orchestrator</span> —— meta-skill，只调度不干活：不产需求 / 不写代码 / 不写测试</p>
+    <div class="grid g3 mt">
+      <div class="card">
+        <div class="t accent">① 入口路由</div>
+        <div class="d">"开始 v2.33.0 开发" → 创建版本目录 + 状态文件 → 跳 B2；"继续" → 读状态跳转到当前步骤</div>
+      </div>
+      <div class="card">
+        <div class="t accent">② 进度持久化</div>
+        <div class="d"><span class="mono">iterate/v{X}/{模块}/.flow-state.json</span> 记录当前步骤、已完成清单、卡口历史、阻塞项 —— 中断 3 天也能秒恢复</div>
+      </div>
+      <div class="card">
+        <div class="t accent">③ 卡口把关</div>
+        <div class="d">5 道检查点统一模板展示；重做 / 跳过需显式理由并留痕，跳过项在 B9 审计中显式列出</div>
+      </div>
+    </div>
+    <div class="code mt">
+<span class="c"># "状态" / "进展" 随时查看可视化进度</span>
+[✅] B2 解析需求        [✅] B3 澄清        [✅] B4 接口文档 (C1 通过)
+[🔄] B5 设计文档 (等待 C2 审查)   [ ] B6 规格书   [ ] B7 编码   [ ] B8 测试   [ ] B9 收尾
+<span class="o">⚠ 待澄清遗留 (1)：[BLK-1, high] X 字段是否需脱敏（来自 B3）</span>
+<span class="g">▶ 下一步：等待 C2 审查 —— 审完说 "OK" 放行，或 "不过 + 意见" 驳回</span>
+    </div>
+    <div class="quote mt" style="font-size:15.5px;">跨会话恢复：新会话发现未完成的 .flow-state.json 会主动询问"继续开发还是开始新任务"，<b>不擅自继续</b>。</div>
+  </div>
+</section>
+
+<!-- ============ 23. 行为准则 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">04 · 核心机制</span>
+    <h2>行为准则：rules/AGENT.md 的三条红线</h2>
+    <div class="grid g3 mt">
+      <div class="card hl">
+        <div class="t accent">先想再写</div>
+        <div class="d">不假设、不隐藏困惑、暴露权衡。多种解读列选项等确认；更简单方案直接 push back。自检：能一句话说清"要解决什么问题"吗？</div>
+      </div>
+      <div class="card hl">
+        <div class="t accent">最小代码量</div>
+        <div class="d">只写必需的代码，零投机。新增方法前必须先搜已有实现；单方法 ≤30 行；扩展优先改已有方法，禁止并行方法导致逻辑分裂。</div>
+      </div>
+      <div class="card hl">
+        <div class="t accent">精准改动</div>
+        <div class="d">不顺手改相邻代码、不重构没坏的东西、遵循已有风格。检验：diff 每一行都能直接追溯到需求。</div>
+      </div>
+    </div>
+    <div class="grid g2 mt">
+      <div class="card">
+        <div class="t">其余硬约束（共 11 条）</div>
+        <ul class="clean" style="margin-top:6px;font-size:15px;">
+          <li>目标驱动：任务转化为可验证标准，循环直到通过</li>
+          <li>架构边界：确定性逻辑必须用代码实现，不出让给 LLM 判断</li>
+          <li>写 Java 前必加载 busi-coding-rules（阿里手册强制条款 + AI 通病防护）</li>
+          <li>测试必须实际运行，禁止"看起来能跑"</li>
+          <li>文档用"必须/禁止"不用"建议/尽量"，消除模糊空间</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="t">这些规则在生效的标志</div>
+        <ul class="clean" style="margin-top:6px;">
+          <li class="ok">diff 精简，没有顺手改动</li>
+          <li class="ok">没有过度设计</li>
+          <li class="ok">困惑在编码前就提出，而不是犯错后才暴露</li>
+        </ul>
+        <div class="d mt">项目特化约束写在业务侧 .agent/AGENT.md，<b>优先级高于通用手册</b>。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 24. 章节页：怎么使用 ============ -->
+<section class="slide section-page">
+  <div class="slide-inner" style="align-items:center;">
+    <div class="num">05</div>
+    <h2>怎么使用</h2>
+    <p class="sub">三分钟把 BizFlow-8 接入一个新的业务服务项目</p>
+  </div>
+</section>
+
+<!-- ============ 25. 三步上手 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">05 · 怎么使用</span>
+    <h2>三步上手：安装 → 初始化 → 启动</h2>
+    <div class="grid g3 mt" style="align-items:stretch;">
+      <div class="card">
+        <div class="t"><span class="tag b">STEP 1</span> 一键安装</div>
+        <div class="code" style="margin-top:10px;font-size:13.5px;padding:14px 16px;">
+<span class="c"># 装到目标项目</span>
+powershell -ExecutionPolicy Bypass `
+  -File .\scripts\install.ps1 `
+  <span class="k">-TargetProject</span> d:\path\to\project
+        </div>
+        <ul class="clean" style="margin-top:10px;font-size:14px;">
+          <li>11 个 skill 落到 <span class="mono">.qoder/skills/</span></li>
+          <li>robocopy 增量幂等，可反复执行</li>
+          <li>-DryRun 预览 / -Force 强覆盖</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="t"><span class="tag g">STEP 2</span> 初始化 overlay</div>
+        <div class="code" style="margin-top:10px;font-size:13.5px;padding:14px 16px;">
+<span class="c"># Qoder 中对 AI 说：</span>
+<span class="g">初始化项目</span>
+<span class="c"># 或 CI 非交互式：</span>
+.\install.ps1 <span class="k">-InitOverlay</span>
+        </div>
+        <ul class="clean" style="margin-top:10px;font-size:14px;">
+          <li>AI 自动探测模块 / 包路径 / 技术栈</li>
+          <li>交互式询问 + 推荐答案，生成预填 overlay</li>
+          <li>重开 Qoder 即自动识别全部 skill</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="t"><span class="tag o">STEP 3</span> 启动版本开发</div>
+        <div class="code" style="margin-top:10px;font-size:13.5px;padding:14px 16px;">
+<span class="c"># 对 AI 说：</span>
+<span class="g">开始 v0.1 开发</span>
+<span class="c"># 然后喂需求文档：</span>
+<span class="g">解析需求 doc/需求.docx</span>
+        </div>
+        <ul class="clean" style="margin-top:10px;font-size:14px;">
+          <li>编排器接管，自动推进 B2 → B9</li>
+          <li>到卡口强制停下等你审</li>
+          <li>随时说"状态"看进度、"继续"接进度</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 26. 触发词速查 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">05 · 怎么使用</span>
+    <h2>日常使用：触发词速查</h2>
+    <div class="grid g2 mt">
+      <table class="tb">
+        <tr><th>说什么</th><th>触发什么</th></tr>
+        <tr><td>"开始 v{X} 开发" / "启动 v{X}"</td><td class="mono accent">busi-flow-orchestrator</td></tr>
+        <tr><td>"继续" / "状态" / "下一步"</td><td class="mono accent">orchestrator 恢复 / 查询</td></tr>
+        <tr><td>"重做 B5" / "跳过 B5" / "暂停"</td><td class="mono accent">orchestrator 控制</td></tr>
+        <tr><td>"解析需求" / "分析需求文档"</td><td class="mono accent">busi-req-analyze</td></tr>
+        <tr><td>"澄清需求" / "需求拷问"</td><td class="mono accent">busi-req-clarify</td></tr>
+        <tr><td>"接口文档" / "接口设计"</td><td class="mono accent">busi-api-spec</td></tr>
+      </table>
+      <table class="tb">
+        <tr><th>说什么</th><th>触发什么</th></tr>
+        <tr><td>"设计文档" / "design doc"</td><td class="mono accent">busi-design-doc</td></tr>
+        <tr><td>"写规格书" / "dev spec"</td><td class="mono accent">busi-dev-spec</td></tr>
+        <tr><td>"接口骨架" / "开始开发"</td><td class="mono accent">busi-dev-loop</td></tr>
+        <tr><td>"生成测试" / "接口测试"</td><td class="mono accent">busi-api-test</td></tr>
+        <tr><td>"迭代总结" / "沉淀" / "收官"</td><td class="mono accent">busi-iter-summary</td></tr>
+        <tr><td>（写 Java 时自动加载）</td><td class="mono accent">busi-coding-rules</td></tr>
+      </table>
+    </div>
+    <div class="quote mt">审查卡口回复：<span class="green mono">"OK" / "通过"</span> 放行 → 进下一步；<span class="danger mono">"不过 + 修订意见"</span> 驳回 → 标 in_progress 重做本步。</div>
+  </div>
+</section>
+
+<!-- ============ 27. 产物地图 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">05 · 怎么使用</span>
+    <h2>产物地图：一个版本开发完会留下什么</h2>
+    <div class="grid g2 mt" style="align-items:start;">
+      <div class="code" style="font-size:14.5px;">
+<span class="c"># 业务项目根目录下</span>
+.agent/
+├── AGENT.md              <span class="c"># 项目硬约束（overlay）</span>
+├── coding-rules.md       <span class="c"># 编码习惯（overlay）</span>
+└── overlay-spec.md       <span class="c"># 流程特化（overlay）</span>
+.qoder/skills/busi-*/     <span class="c"># 安装来的 11 个 skill</span>
+iterate/v0.1/{业务模块}/
+├── 01-需求内容.md         <span class="c"># B2+B3 结构化需求（❓全清）</span>
+├── 02-接口文档-内部.md    <span class="c"># B4 契约</span>
+├── 02-接口文档-外部.md
+├── 03-设计文档.md         <span class="c"># B5 给人看</span>
+├── 04-AI开发规格书.md     <span class="c"># B6 给 AI 看</span>
+├── develop/              <span class="c"># B7 编码记录 + debug-log</span>
+├── clarify/              <span class="c"># 各阶段 Q&A 归档</span>
+├── summary/迭代总结.md    <span class="c"># B9 沉淀</span>
+└── .flow-state.json      <span class="c"># 编排器进度状态</span>
+      </div>
+      <div>
+        <div class="card">
+          <div class="t">每份产物都有明确消费者</div>
+          <ul class="clean" style="margin-top:6px;font-size:15px;">
+            <li><b>接口文档</b> → 前端并行 mock、联调依据</li>
+            <li><b>设计文档</b> → 评审会材料、测试用例来源</li>
+            <li><b>规格书</b> → 下次迭代 AI 的直接上下文</li>
+            <li><b>迭代总结</b> → 经验沉淀，AI 越用越懂这个项目</li>
+            <li><b>.flow-state.json</b> → 中断恢复、审计追溯</li>
+          </ul>
+        </div>
+        <div class="card mt">
+          <div class="t green">全链路可追溯</div>
+          <div class="d">任何一行代码都能反向追到：哪个需求条目 → 哪次澄清结论 → 哪份设计决策 → 哪条规格书清单。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 28. 落地与演进 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">06 · 落地与演进</span>
+    <h2>落地验证与演进历程</h2>
+    <div class="grid g2 mt">
+      <div class="card hl2">
+        <div class="t"><span class="tag g">首个试跑项目</span> OCS 海外报关系统</div>
+        <ul class="clean" style="margin-top:8px;font-size:15px;">
+          <li>Maven 多模块结构（ocs-common / ocs-feign / ocs-server）</li>
+          <li>install.ps1 一键装入 11 个 skill 至 .qoder/skills/</li>
+          <li>overlay 三件套落地，定义 OCS 自己的包路径 / 编码习惯 / 流程特化</li>
+          <li>迭代产物按 v0.1 / v0.0.1 版本目录归档，流程完整跑通</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="t">演进时间线</div>
+        <ul class="clean" style="margin-top:8px;font-size:15px;">
+          <li><b>阶段 A</b> · 仓库骨架：目录 + 行为准则 + 流程总览 + 9 个 skill 占位</li>
+          <li><b>2026-06-16</b> · BizFlow-8 命名统一 + 一键安装脚本 + 模板抽离 SSoT（5 个 skill 瘦身 39%，上下文密度 ×2.2）</li>
+          <li><b>2026-07-21</b> · 新增 busi-project-init 前置 skill + 安装脚本 overlay 逐文件检测与 -InitOverlay 脚手架</li>
+        </ul>
+      </div>
+    </div>
+    <div class="grid g3 mt">
+      <div class="card" style="text-align:center;"><div class="big-num">11</div><div class="d mt">Skill 总数<br>（8 流程 + 1 编排 + 1 基线 + 1 初始化）</div></div>
+      <div class="card" style="text-align:center;"><div class="big-num">5</div><div class="d mt">人工审查卡口<br>卡口未到，流程不越</div></div>
+      <div class="card" style="text-align:center;"><div class="big-num">3</div><div class="d mt">overlay 文件<br>项目特化知识注入点</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 29. 对比总结 ============ -->
+<section class="slide">
+  <div class="slide-inner">
+    <span class="kicker">06 · 落地与演进</span>
+    <h2>Before / After：这套流程带来了什么</h2>
+    <div class="grid g2 mt">
+      <div class="card">
+        <div class="t danger">Before · 对话式开发</div>
+        <ul class="clean" style="margin-top:6px;">
+          <li class="x">需求直接进编码，理解偏差代码层才暴露</li>
+          <li class="x">AI 不懂项目规范，产出格格不入</li>
+          <li class="x">无审查卡口，错误一路传导</li>
+          <li class="x">无文档沉淀，经验随对话蒸发</li>
+          <li class="x">中断即丢失，无法恢复</li>
+          <li class="x">达成率约 70%~80%</li>
+        </ul>
+      </div>
+      <div class="card hl2">
+        <div class="t green">After · BizFlow-8 流程化开发</div>
+        <ul class="clean" style="margin-top:6px;">
+          <li class="ok">B3 澄清把理解偏差消灭在编码前</li>
+          <li class="ok">overlay 注入项目规范，产出即合群</li>
+          <li class="ok">5 道卡口，人类在关键点把关</li>
+          <li class="ok">8 类产物归档，经验跨版本复用</li>
+          <li class="ok">状态文件持久化，随时中断随时续</li>
+          <li class="ok">流程可追溯：代码 → 规格 → 设计 → 需求</li>
+        </ul>
+      </div>
+    </div>
+    <div class="quote mt" style="font-size:18px;">本质变化：把 AI 从"<b>聊天对象</b>"变成"<span class="accent">流水线上的靠谱同事</span>" —— 人类制定规则与边界，AI 在规则内高效运转。</div>
+  </div>
+</section>
+
+<!-- ============ 30. 结尾 ============ -->
+<section class="slide">
+  <div class="slide-inner cover">
+    <div class="logo">BIZFLOW-8 · Q & A</div>
+    <h2>让 AI 按人类的标准流程做开发</h2>
+    <p class="sub" style="max-width:860px;font-size:19px;">
+      从一次"对话式开发只有 70 分"的痛感出发，到一套可安装、可恢复、可审计、可沉淀的 8 步流程。
+      BizFlow-8 不是要替代工程师的判断，而是把工程师的判断<b class="accent">固化成流程与规则</b>，让 AI 在框架内把事情做对。
+    </p>
+    <div class="grid g3 mt" style="max-width:960px;">
+      <div class="card" style="text-align:center;">
+        <div class="t accent">后续规划</div>
+        <div class="d">版本初始化脚本 new-version.ps1<br>CI 注入校验同步状态<br>检查点自动通知（钉钉/飞书）</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="t accent">接入新项目</div>
+        <div class="d">install.ps1 -TargetProject<br>→ 说"初始化项目"<br>→ 说"开始 v{X} 开发"</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="t accent">了解更多</div>
+        <div class="d">README.md · INSTALL.md<br>docs/workflow.md<br>rules/AGENT.md</div>
+      </div>
+    </div>
+    <div class="meta" style="margin-top:36px;">
+      <span>欢迎提问与讨论</span>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div class="pager" id="pager">1 / 24</div>
+<div class="nav">
+  <button onclick="go(-1)" title="上一页">‹</button>
+  <button onclick="go(1)" title="下一页">›</button>
+</div>
+<div class="hint">← → 翻页 · F 全屏 · Home/End 首末页</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let cur = 0;
+  function show(i){
+    cur = Math.max(0, Math.min(slides.length-1, i));
+    slides.forEach((s,idx)=>s.classList.toggle('active', idx===cur));
+    document.getElementById('pager').textContent = (cur+1)+' / '+slides.length;
+    document.getElementById('progress').style.width = ((cur+1)/slides.length*100)+'%';
+    if(location.hash !== '#'+(cur+1)) history.replaceState(null,'','#'+(cur+1));
+  }
+  function go(d){ show(cur+d); }
+  const initPage = parseInt((location.hash||'').slice(1),10);
+  if(!isNaN(initPage)) cur = initPage-1;
+  document.addEventListener('keydown', e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ') go(1);
+    if(e.key==='ArrowLeft'||e.key==='PageUp') go(-1);
+    if(e.key==='Home') show(0);
+    if(e.key==='End') show(slides.length-1);
+    if(e.key==='f'||e.key==='F'){
+      if(!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+  show(cur);
+</script>
+</body>
+</html>

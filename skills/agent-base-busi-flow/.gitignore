@@ -1,0 +1,21 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs / Temp
+*.log
+*.tmp
+*.bak
+
+# Local override（业务服务侧 overlay 不应提交进通用仓库）
+.agent/
+overlay/
+
+# 个人测试产物
+tmp/
+scratch/

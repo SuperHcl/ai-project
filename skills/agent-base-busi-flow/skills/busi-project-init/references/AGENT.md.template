@@ -1,0 +1,93 @@
+<!-- 由 busi-project-init 生成于 {生成时间} -->
+<!-- 搜索 <!-- TODO --> 逐项填充 -->
+
+# {项目名称} 项目特化 Agent 规则
+
+**与 BizFlow-8 通用规则配套使用。本文件优先级高于通用规则。冲突时以本文件为准。**
+
+> {项目名称} = {业务领域简述}
+
+## A. 流程入口
+
+业务版本开发统一从 `busi-flow-orchestrator` 接入，禁止绕过 orchestrator 直接动手写需求 / 接口 / 代码。
+
+触发词速查：
+
+| 用户说 | 行为 |
+|---|---|
+| "开始 v{X} 开发" / "启动 v{X}" | 进入 B2 |
+| "继续" / "v{X} 进展" / "状态" | 读 `.flow-state.json` 汇报进度 |
+| "重做 B{N}" / "跳过 B{N}" | orchestrator 进入对应控制分支 |
+
+## B. 项目骨架硬约束
+
+<!-- ============================================================ -->
+<!-- 本章由 AI 读取项目实际代码后生成，不要手写猜测。               -->
+<!-- AI 探测内容：pom.xml 或 build.gradle 模块结构、                -->
+<!--   src/main/java 下的包路径、分层模式、已有约束等。              -->
+<!-- ============================================================ -->
+
+### B.1 模块边界
+
+<!-- TODO: 由 busi-project-init 探测项目 pom.xml / build.gradle 后填写 -->
+<!-- 说明每个模块的职责边界、允许的依赖方向 -->
+<!-- 如果是单模块项目，直接描述包结构即可 -->
+
+### B.2 包路径前缀
+
+<!-- TODO: 由 busi-project-init 扫描 src/main/java 后填写 -->
+<!-- 列出项目实际使用的包路径前缀 -->
+
+### B.3 接口路径前缀
+
+<!-- TODO: 由 busi-project-init 扫描已有 Controller 的 @RequestMapping 后填写 -->
+<!-- 如项目已有接口，从现有代码提取规律；如无接口，由用户指定 -->
+
+| 入口类型 | URI 前缀 | 鉴权策略 |
+|---|---|---|
+| <!-- TODO --> | <!-- TODO --> | <!-- TODO --> |
+
+### B.4 禁止规则
+
+<!-- TODO: 由 busi-project-init 根据 B.1 模块边界推导依赖方向约束 -->
+<!-- 示例：某模块禁止引入业务依赖、某模块禁止直接调用 DAO 等 -->
+<!-- 如无强约束，可留空或删除本节 -->
+
+## C. 写代码前的强制动作
+
+1. 加载 `busi-coding-rules`（阿里手册基线 + AI 通病防护）
+2. 加载本项目 `.agent/coding-rules.md`（项目编码 overlay）
+3. 加载本项目 `.agent/overlay-spec.md`（B2-B9 项目特化补充）
+
+如果 `.agent/coding-rules.md` 与 `busi-coding-rules` 冲突，**以 `.agent/coding-rules.md` 为准**。
+
+## D. 文档落地位置
+
+<!-- TODO: 由用户指定 iterate 根目录 -->
+
+| 产物 | 路径 |
+|---|---|
+| B2 需求内容 | `{iterate根目录}/v{X}/01-需求内容.md` |
+| B4 接口文档 | `{iterate根目录}/v{X}/02-接口文档-内部.md` |
+| B5 设计文档 | `{iterate根目录}/v{X}/03-设计文档.md` |
+| B6 AI 开发规格书 | `{iterate根目录}/v{X}/04-AI开发规格书.md` |
+| B9 版本总结 | `{iterate根目录}/v{X}/05-版本收尾.md` |
+| 流程状态 | `{iterate根目录}/v{X}/.flow-state.json`（建议 gitignore） |
+
+**禁止**：业务文档落到 iterate 根目录之外的位置。
+
+## E. 终端命令硬约束
+
+<!-- TODO: 根据项目实际运行环境填写 -->
+<!-- 默认 Windows + PowerShell 规则如下，Linux 项目可覆盖 -->
+
+默认规则（Windows + PowerShell）：
+- 语句分隔用 `;`，禁用 `&&`
+- 禁用 Linux 命令（`grep`、`cat`、`rm`、`ls`、`find`、`mkdir -p`）
+- 用 PowerShell 等价命令或 IDE 内置工具替代
+
+## F. 不变量
+
+<!-- TODO: 由 busi-project-init 探测 pom.xml / build.gradle 后填写 -->
+<!-- 内容示例：Java 版本锁定、框架版本约束、注解处理器顺序等 -->
+<!-- 如无特殊不可变约束，可留空或删除本节 -->
