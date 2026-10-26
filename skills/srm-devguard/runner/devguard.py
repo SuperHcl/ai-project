@@ -71,7 +71,8 @@ DEFAULT_POLICY = {
     "godFile": {"trackLines": 800, "newFileLimit": 600},
     "audit": {"churnSince": "90 days ago", "top": 15, "godLines": 400},
     "review": {
-        "maxJoinTables": 4,
+        # 与 .agent/db-rule.md:23 一致：多表 join ≤3 张
+        "maxJoinTables": 3,
         "requiredDiagrams": ["sequenceDiagram", "flowchart", "erDiagram"],
         "requireTestMatrix": True,
         "roles": [],
