@@ -70,6 +70,13 @@ DEFAULT_POLICY = {
     },
     "godFile": {"trackLines": 800, "newFileLimit": 600},
     "audit": {"churnSince": "90 days ago", "top": 15, "godLines": 400},
+    "review": {
+        "maxJoinTables": 4,
+        "requiredDiagrams": ["sequenceDiagram", "flowchart", "erDiagram"],
+        "requireTestMatrix": True,
+        "roles": [],
+        "hintPatterns": ["内存分页", "subList", "分页后合并", "全表扫描", "各角色分页"],
+    },
     "checks": {
         "flowableImport": True,
         "jdk9Api": True,
@@ -579,6 +586,193 @@ def cmd_audit(root, args):
     return 0
 
 
+SYMBOL_RE = re.compile(
+    r"\b([A-Z][A-Za-z0-9]{2,}(?:Service|ServiceImpl|Dao|Mapper|Entity|Controller|Cache|CacheData|"
+    r"Vo|Form|Converter|Manager|Support|Registry|Policy|Component|Helper|Client|Engine|Port))\b")
+METHOD_RE = re.compile(r"\b([A-Z][A-Za-z0-9]+)\.([a-z][A-Za-z0-9]*)\s*\(")
+CODE_FENCE_RE = re.compile(r"```(\w*)\n(.*?)```", re.S)
+TABLE_REF_RE = re.compile(r"\b(?:from|join)\s+([A-Za-z_][\w.]*)", re.I)
+
+
+def build_class_index(code_root, exclude):
+    index = {}
+    for path in iter_files(code_root, ["."], {".java"}, exclude):
+        index.setdefault(path.stem, path)
+    return index
+
+
+def cmd_review(root, args):
+    """设计文档机械预检：只判"可机械判定的部分"，不做语义裁决。"""
+    doc = Path(args.doc)
+    if not doc.is_file():
+        print(f"文档不存在：{doc}", file=sys.stderr)
+        return 2
+    policy, _, _ = load_policy(root)
+    settings = policy["review"]
+    code_root = Path(args.code).resolve() if args.code else root
+    text = doc.read_text(encoding="utf-8", errors="replace")
+    blocks = [(m.group(1).lower(), m.group(2)) for m in CODE_FENCE_RE.finditer(text)]
+    roles = [item.strip() for item in
+             ((args.roles or "").split(",") if args.roles else settings["roles"]) if item.strip()]
+
+    failures, hints = [], []
+
+    for kind in settings["requiredDiagrams"]:
+        if kind not in text:
+            failures.append(("缺少必备图", kind))
+
+    # 测试矩阵：不苛求字面叫“测试矩阵”，有“测试对象/必测场景/用例/场景+预期”表也算
+    if settings["requireTestMatrix"] and not re.search(
+            r"测试矩阵|\|[^|]*(测试对象|必测场景|用例|场景)[^|]*\|", text):
+        failures.append(("缺少测试矩阵", "没有“测试矩阵”字样，也没有“测试对象/必测场景/用例/场景”表头"))
+
+    for role in roles:
+        if role not in text:
+            failures.append(("角色未覆盖", role))
+
+    # 只有"像完整语句"的块才计入表数：SELECT + FROM + (WHERE/JOIN/GROUP BY)。
+    # 文档里常见的谓词片段（自述"不是可直接执行的完整 SQL"）不能拿来核表数。
+    candidate_sql = [body for lang, body in blocks
+                     if lang == "sql" or re.search(r"\bselect\b", body, re.I)]
+
+    def looks_executable(body):
+        """去掉注释后必须以 SELECT / <select> 开头，才算完整语句；否则是谓词片段。"""
+        stripped = re.sub(r"(?m)^\s*--.*$", "", body).strip()
+        return bool(re.match(r"(?is)^(?:<select[^>]*>|select\b)", stripped)) \
+            and bool(re.search(r"(?is)\bfrom\b", stripped))
+
+    executable_sql = [body for body in candidate_sql if looks_executable(body)]
+    max_tables = 0
+    for part in executable_sql:
+        tables = {name.split(".")[-1] for name in TABLE_REF_RE.findall(part)}
+        max_tables = max(max_tables, len(tables))
+        if len(tables) > settings["maxJoinTables"]:
+            failures.append(("SQL 关联表数超限",
+                             f"{len(tables)} 张表 > {settings['maxJoinTables']}：{', '.join(sorted(tables))}"))
+
+    # 符号核对：图里的名字是设计节点（形如 UserService[SysUserService] 的节点 id），不是代码事实。
+    # 先剔除 mermaid，再在正文里区分“新增”与“现状”，只报未标注新增又确实不存在的。
+    plan_words = ("新增", "拟", "建议", "设计为", "改为", "引入", "拆分", "下沉", "抽出",
+                  "新建", "不再", "抽取", "替换")
+    body_text = re.sub(r"```mermaid.*?```", "", text, flags=re.S)
+    body_lines = body_text.splitlines()
+    occurrences = {}
+    for match in SYMBOL_RE.finditer(body_text):
+        name = match.group(1)
+        bucket = occurrences.setdefault(name, {"plan": 0, "plain": 0})
+        # 只按同一行判定：上下行常属于别的话题，带上会误判
+        line_index = body_text[: match.start()].count("\n")
+        context = body_lines[line_index] if line_index < len(body_lines) else ""
+        if any(word in context for word in plan_words):
+            bucket["plan"] += 1
+        else:
+            bucket["plain"] += 1
+
+    index = build_class_index(code_root, set(policy["excludeDirs"]))
+    symbols = sorted(occurrences)
+    # 只要文档里任一非图位置标了“新增/抽取/改为…”，就认作已声明的新类，不做事实核对。
+    planned = [name for name, item in occurrences.items()
+               if name not in index and item["plan"]]
+    missing = [name for name, item in occurrences.items()
+               if name not in index and not item["plan"]]
+    unlabeled = missing
+    missing_methods = []
+    for cls, method in sorted(set(METHOD_RE.findall(body_text))):
+        path = index.get(cls)
+        if path is None:
+            continue
+        try:
+            if method + "(" not in path.read_text(encoding="utf-8", errors="replace"):
+                missing_methods.append(f"{cls}.{method}()")
+        except OSError:
+            continue
+
+    # 代码事实核对默认是提示：文档里"写的是计划还是现状"需要人判断，不适合机械阻断。
+    if args.strict_facts:
+        for name in missing:
+            failures.append(("事实核对失败", f"代码中不存在且未标注新增：{name}"))
+
+    # 提示项要排除“禁止性表述”：文档里写“不得用内存分页”不该被当成违规写法
+    negations = ("禁止", "不得", "严禁", "不允许", "不可", "不用", "不能", "不把", "不做",
+                 "避免", "而非", "拒绝", "不采用", "不新增")
+    for pattern in settings["hintPatterns"]:
+        for match in re.finditer(re.escape(pattern), text):
+            window_start = max(text.rfind("。", 0, match.start()),
+                               text.rfind("\n", 0, match.start()),
+                               text.rfind("；", 0, match.start()),
+                               text.rfind(";", 0, match.start()))
+            sentence = text[window_start + 1: match.end() + 40]
+            if any(word in sentence for word in negations):
+                continue
+            hints.append((pattern, text[: match.start()].count("\n") + 1))
+
+    payload = {"doc": str(doc), "lines": text.count("\n") + 1,
+               "symbols_checked": len(symbols), "missing_symbols": missing,
+               "planned_symbols": planned, "unlabeled_symbols": unlabeled,
+               "missing_methods": missing_methods,
+               "failures": [{"check": item[0], "detail": item[1]} for item in failures],
+               "sql_complete": len(executable_sql), "sql_max_tables": max_tables,
+               "hints": [{"pattern": item[0], "line": item[1]} for item in hints]}
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if failures else 0
+
+    print("# DevGuard review（设计文档机械预检）\n")
+    print(f"- 文档：{doc.name}（{payload['lines']} 行，{len(blocks)} 段代码）")
+    print(f"- 代码基线：{code_root}")
+    print(f"- 角色检查：{', '.join(roles) if roles else '未配置（用 --roles 指定）'}\n")
+
+    if failures:
+        print(f"## 机械判定未通过（{len(failures)}）")
+        for item in failures:
+            print(f"  - [{item[0]}] {item[1]}")
+        print()
+    else:
+        print("## 机械判定\n  - 结构、角色覆盖、SQL 表数均通过\n")
+
+    print("## SQL 核验")
+    if executable_sql:
+        print(f"  - 完整语句 {len(executable_sql)} 段，最大去重表数 {max_tables}"
+              f"（上限 {settings['maxJoinTables']}）")
+    elif candidate_sql:
+        print(f"  - 未发现完整可执行 SQL（有 {len(candidate_sql)} 段谓词片段）；"
+              f"表数约束未被机械验证 —— 实施前必须补完整语句")
+    else:
+        print("  - 文档中没有 SQL；表数约束未被机械验证 —— 实施前必须补完整语句")
+    print()
+
+    print("## 代码事实核对")
+    if missing or missing_methods:
+        for name in missing[:15]:
+            print(f"  - 代码中不存在，且文档未标为新增：`{name}`")
+        for name in missing_methods[:15]:
+            print(f"  - 已存在类中找不到方法：`{name}`")
+        if len(missing) + len(missing_methods) > 30:
+            print(f"  - ... 其余 {len(missing) + len(missing_methods) - 30} 项省略（--json 看全部）")
+    else:
+        print(f"  - {len(symbols)} 个符号：已存在的都在代码中命中，其余均标注为新增")
+    if planned:
+        print(f"  - 拟新增（文档已标注，不做事实核对）：{len(planned)} 个")
+    print()
+
+    if hints:
+        print("## 需要与硬约束对照的写法（提示，不是判决）")
+        for pattern, line in hints[:12]:
+            print(f"  - 第 {line} 行出现「{pattern}」：核对是否触犯“禁止无界 IN / 内存分页 / 分页后合并”")
+        print()
+
+    print("## 无法自动判断（必须人工）")
+    print("  - 权限语义是否正确（多角色并集、顶层交集、无角色不得放行）")
+    print("  - 缓存一致性与撤权时效是否可接受（TTL / 主动失效 / 失败补偿）")
+    print("  - 设计是否与真实业务口径一致（本文凭据只覆盖“与代码是否自洽”）")
+    print("  - 迁移顺序与分阶段是否可执行")
+
+    record_run(root, "review", {"at": time.strftime("%Y-%m-%dT%H:%M:%S"), "doc": str(doc),
+                                "failures": len(failures), "missing_symbols": len(missing),
+                                "missing_methods": len(missing_methods)})
+    return 1 if failures else 0
+
+
 def cmd_feedback(root, args):
     target = state_dir(root) / "feedback.jsonl"
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -730,6 +924,14 @@ def main(argv=None):
     audit.add_argument("--include-tests", action="store_true", help="把测试代码一并纳入排序")
     audit.add_argument("--json", action="store_true")
 
+    review = sub.add_parser("review", help="设计文档机械预检（不代替人工评审）")
+    review.add_argument("--doc", required=True, help="设计文档路径（.md）")
+    review.add_argument("--code", default=None, help="核对代码事实的仓库根（默认同 --root）")
+    review.add_argument("--roles", default=None, help="逗号分隔的角色码，如 CGY,CGZZ")
+    review.add_argument("--strict-facts", action="store_true",
+                        help="把“声称已存在但代码中没有”也算作阻断（默认仅提示）")
+    review.add_argument("--json", action="store_true")
+
     feedback = sub.add_parser("feedback", help="记录这条提示有用/是噪声")
     feedback.add_argument("--key", required=True)
     feedback.add_argument("--verdict", required=True, choices=["useful", "noise", "false-positive"])
@@ -757,7 +959,8 @@ def main(argv=None):
         return 2
 
     handlers = {"init": cmd_init, "check": cmd_check, "audit": cmd_audit,
-                "feedback": cmd_feedback, "report": cmd_report, "install": cmd_install}
+                "review": cmd_review, "feedback": cmd_feedback, "report": cmd_report,
+                "install": cmd_install}
     return handlers[args.command](root, args)
 
 
