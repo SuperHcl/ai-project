@@ -76,7 +76,19 @@ python -I .archguard\devguard.py init
 python -I .archguard\devguard.py check
 ```
 
-`--harness` 可选 `qoder` / `dsh` / `codex` / `none`。不装 skill 也能用 runner，只是 IDE 里不会自动触发。
+`--harness` 决定 skill 落到哪里（不装 skill 也能用 runner，只是 IDE 里不会自动触发）：
+
+| harness | skill 落点 | 说明 |
+|---|---|---|
+| `qoder` | `.qoder/skills/` | 项目级自动识别 |
+| `codex` | `.agents/skills/` | Codex 官方位置（仓库根 / 当前目录 / 祖先目录都会扫描）；用 `$srm-feature` 或 `/skills` 显式调用，也按 `description` 自动匹配 |
+| `dsh` | `.dsh/skills/` | DSH 同时扫描 `.agents/skills/`，所以为 Codex 装一次对 DSH 也生效 |
+| `none` | 不装 | 只用 runner |
+
+**`.codex/prompts` 不是 skill 位置**，装在那里 Codex 不会当成 skill 加载。
+
+skill 采用渐进式披露：Codex 初始列表只读 `name` 和 `description`（默认上限为上下文的 2%），
+命中后才读完整 `SKILL.md`。所以 `description` 里要前置触发词——本插件的两个 skill 已经这么写。
 
 ## 输出怎么读
 
@@ -106,3 +118,4 @@ python -I .archguard\devguard.py check
 - 检查用正则，不解析完整语法树：结论是**候选**，需人确认
 - 变更量统计基于 `git diff`，未跟踪文件会计入；非 git 目录下 `check` 不可用
 - 不跑 Maven、不跑测试：它的定位是"看结构"，不是"验证行为"
+- `review` 只判可机械判定的部分；设计文档若没有完整可执行 SQL，表数约束会明确标为"未验证"而不是"通过"

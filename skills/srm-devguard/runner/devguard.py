@@ -843,53 +843,43 @@ def cmd_report(root, args):
     return 0
 
 
+def skill_root(root, harness, user_level):
+    """各 harness 的 skill 落点。
+
+    Codex 读 .agents/skills（官方：仓库根/当前目录/祖先目录均扫描），
+    该位置 DSH 也扫描（project-agents 根），所以一处安装两边生效。
+    """
+    if user_level and harness == "codex":
+        return Path.home() / ".agents" / "skills"
+    if user_level and harness == "dsh":
+        return Path(os.environ.get("DSH_HOME", Path.home() / ".dsh")) / "skills"
+    relative = {"qoder": Path(".qoder/skills"), "dsh": Path(".dsh/skills"),
+                "codex": Path(".agents/skills")}[harness]
+    return root / relative
+
+
 def cmd_install(root, args):
     plugin = Path(__file__).resolve().parent.parent
     skills_src = plugin / "skills"
-    targets = {"qoder": Path(".qoder/skills"), "dsh": Path(".dsh/skills"),
-               "codex": Path(".codex/prompts")}
     harness = args.harness
 
     if harness == "none":
         pass
-    elif harness == "codex":
-        # Codex 没有原生 Skill 发现机制，只认扁平的 *.md prompt；
-        # 因此把每个 SKILL.md 摊平成单文件，并附上细则文件的本地绝对路径。
-        prompts = root / targets["codex"]
-        prompts.mkdir(parents=True, exist_ok=True)
+    elif harness == "qoder" and not (root / ".qoder").exists():
+        print("目标项目没有 .qoder 目录，跳过 skill 安装（runner 仍可用）")
+    else:
+        base = skill_root(root, harness, args.user_level)
         for skill_dir in sorted(skills_src.iterdir()):
             if not skill_dir.is_dir():
                 continue
-            refs = sorted(p for p in skill_dir.rglob("*") if p.is_file() and p.name != "SKILL.md")
-            header = f"<!-- devguard skill: {skill_dir.name} -->\n"
-            if refs:
-                # 细则一并复制到状态目录，prompt 自带绝对路径，装完即自包含
-                ref_root = state_dir(root) / "skills" / skill_dir.name
-                header += "\n> 需要细则时直接读这些本地文件：\n"
-                for ref in refs:
-                    target = ref_root / ref.relative_to(skill_dir)
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copyfile(ref, target)
-                    header += f"> - {target}\n"
-                header += "\n"
-            body = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
-            (prompts / f"{skill_dir.name}.md").write_text(header + body, encoding="utf-8")
-            print(f"  + {targets['codex']}/{skill_dir.name}.md")
-    else:
-        if not (root / f".{harness}").exists():
-            print(f"目标项目没有 .{harness} 目录，跳过 skill 安装（runner 仍可用）")
-        else:
-            for skill_dir in sorted(skills_src.iterdir()):
-                if not skill_dir.is_dir():
+            destination = base / skill_dir.name
+            for source in skill_dir.rglob("*"):
+                if source.is_dir():
                     continue
-                destination = root / targets[harness] / skill_dir.name
-                for source in skill_dir.rglob("*"):
-                    if source.is_dir():
-                        continue
-                    target = destination / source.relative_to(skill_dir)
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copyfile(source, target)
-                print(f"  + {targets[harness]}/{skill_dir.name}")
+                target = destination / source.relative_to(skill_dir)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, target)
+            print(f"  + {destination}")
 
     state = state_dir(root)
     state.mkdir(parents=True, exist_ok=True)
@@ -943,6 +933,8 @@ def main(argv=None):
 
     install = sub.add_parser("install", help="装 skill 到 IDE，并初始化本地目录")
     install.add_argument("--harness", default="none", choices=["none", "qoder", "dsh", "codex"])
+    install.add_argument("--user-level", action="store_true",
+                         help="装到用户级目录（codex: ~/.agents/skills；dsh: $DSH_HOME/skills）")
 
     args = parser.parse_args(argv)
 
