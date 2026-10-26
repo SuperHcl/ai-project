@@ -1,0 +1,6 @@
+# 自检与临时产物
+.selftest/
+.selftest-ratchet/
+.selftest-e2e/
+__pycache__/
+*.pyc
