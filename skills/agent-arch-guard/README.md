@@ -15,21 +15,29 @@ ArchGuard 补的是 AGENTS 做不到的三件事：
 | 加载 | 全量 | 命中关键词才加载对应 SKILL |
 | 执行 | 零成本违规 | `verify.py` 不过不放行，Git hook 强制 |
 
-## 四个 Skill
+## 两条主流程 + 四个判断 Skill
+
+**新需求** → `archg-feature`：验收口径 → 范围预算 → 落位检查 → 交付契约（四道门，不重复项目已有的设计流程）
+
+**旧代码 review/改造** → `archg-legacy`：`audit.py` 选点 → 定目标形态 → 单单元改造 → 分级 review
 
 | Skill | 触发场景 | 产出 |
 |---|---|---|
-| `archg-plan` | 新模块 / 新功能 / 重构 / 要方案 | ADR-lite（≤1 页）+ review 导航 + 不确定性清单 |
-| `archg-budget` | 过度设计 / 测试太多没用 / 要不要抽接口 | 抽象预算 + 测试预算，逐项证明 |
+| `archg-feature` | 新需求 / 新接口 / 加功能 | 验收口径 + 范围预算 + 交付四项 |
+| `archg-legacy` | review 旧代码 / 改造 / 接手看不懂的模块 | 改造选点 + 三档 review 方法 |
+| `archg-plan` | 要给方案 / 重构 / 跨域改动 | ADR-lite（≤1 页）+ review 导航 |
+| `archg-budget` | 过度设计 / 测试太多没用 / 要不要抽接口 | 抽象预算 + 测试预算 |
 | `archg-boundary` | 架构、分层、包结构、权限鉴权域改动 | 域地图 + 依赖方向 + ArchUnit 断言 |
 | `archg-ratchet` | 老项目、god class、往巨型类加功能 | 只许变小的基线门禁 |
 
-## 三个可执行物（不靠自觉）
+## 五个可执行物（不靠自觉）
 
 ```
+scripts/scope_check.py 范围预算：文件数/新增行/新增端点/新增表（新需求用，可阻断）
+scripts/audit.py       旧代码体检：按「复杂度 x 变更热度」排改造候选（旧代码用）
 scripts/ratchet.py     已知超大文件只许变小；新文件超上限即阻断
 scripts/scan_design.py 单实现抽象 / 超大文件 / 同类概念散落（候选清单）
-scripts/verify.py      统一入口，供交付自检、git pre-commit、CI 调用
+scripts/verify.py      统一入口，依次跑棘轮 + 范围预算 + 扫描
 ```
 
 三者都是纯标准库 Python，无第三方依赖，跨平台。**这是唯一与 harness 无关的强制层**——Git hook 不关心你用哪个 AI。
@@ -72,8 +80,10 @@ python -I .arch-guard/verify.py            # 交付前自检
 ```
 agent-arch-guard/
 ├── rules/AGENT.md                     常驻硬约束（注入 AGENTS.md / .qoder/rules）
-├── skills/archg-*/SKILL.md            4 个按需加载的判断 Skill
+├── skills/archg-*/SKILL.md            6 个按需加载的判断 Skill
 │   ├── archg-plan/references/adr-lite.md
+│   ├── archg-feature/references/acceptance.md
+│   ├── archg-legacy/references/review-method.md
 │   └── archg-boundary/references/domain-map.md
 ├── scripts/                           安装器 + 三个可执行检查
 ```

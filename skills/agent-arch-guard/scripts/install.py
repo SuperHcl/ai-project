@@ -18,6 +18,7 @@
 """
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -33,7 +34,13 @@ for _stream in (sys.stdout, sys.stderr):
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 SKILLS_SRC = PLUGIN_ROOT / "skills"
 RULES_SRC = PLUGIN_ROOT / "rules" / "AGENT.md"
-SCRIPTS = ("ratchet.py", "scan_design.py", "verify.py")
+SCRIPTS = ("ratchet.py", "scan_design.py", "audit.py", "scope_check.py", "verify.py")
+DEFAULT_BUDGET = {
+    "max_files": 40,
+    "max_added_lines": 800,
+    "max_new_endpoints": 5,
+    "max_new_tables": 2,
+}
 GUARD_DIR = ".arch-guard"
 BLOCK_BEGIN = "<!-- arch-guard:begin -->"
 BLOCK_END = "<!-- arch-guard:end -->"
@@ -209,6 +216,13 @@ def self_check():
         expect((project / ".qoder" / "rules" / "arch-guard.md").is_file(),
                "qoder 规则镜像未落地")
         expect((project / GUARD_DIR / "ratchet.py").is_file(), "检查器未落地")
+        expect((project / GUARD_DIR / "audit.py").is_file(), "audit.py 未落地")
+        expect((project / GUARD_DIR / "scope_check.py").is_file(), "scope_check.py 未落地")
+        expect((project / GUARD_DIR / "budget.json").is_file(), "默认预算未生成")
+        expect((project / ".qoder" / "skills" / "archg-feature" / "SKILL.md").is_file(),
+               "archg-feature 未落地")
+        expect((project / ".qoder" / "skills" / "archg-legacy" / "SKILL.md").is_file(),
+               "archg-legacy 未落地")
         expect((project / "AGENTS.md").read_text(encoding="utf-8").count(BLOCK_BEGIN) == 1,
                "AGENTS.md 标记块数量不为 1")
 
@@ -230,6 +244,7 @@ def self_check():
 
         # hook：外来 hook 必须拒绝覆盖
         hook = project / ".git" / "hooks" / "pre-commit"
+        hook.parent.mkdir(parents=True, exist_ok=True)
         hook.write_text("#!/bin/sh\nexit 23\n", encoding="utf-8")
         try:
             install_hook(project, dry_run=False, log=[])
@@ -251,10 +266,19 @@ def self_check():
 
 
 def install(project, harnesses, force, dry_run, user_level, with_hook, log):
-    # 1. 检查器与基线目录
+    # 1. 检查器与预算文件（预算只在缺失时生成，不覆盖项目已调整的值）
     for name in SCRIPTS:
         write_if_changed(project / GUARD_DIR / name, read(PLUGIN_ROOT / "scripts" / name),
                          force, dry_run, log)
+    budget = project / GUARD_DIR / "budget.json"
+    if not budget.exists():
+        if dry_run:
+            log.append(f"[NEW]       {budget}（默认范围预算）")
+        else:
+            budget.parent.mkdir(parents=True, exist_ok=True)
+            budget.write_text(json.dumps(DEFAULT_BUDGET, ensure_ascii=False, indent=2) + "\n",
+                               encoding="utf-8")
+            log.append(f"[NEW]       {budget}（默认范围预算）")
 
     # 2. 各 harness 的 skill 落地
     skill_dirs = sorted(path for path in SKILLS_SRC.iterdir() if path.is_dir())

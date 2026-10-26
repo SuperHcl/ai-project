@@ -69,12 +69,20 @@ python -I scripts/install.py --project /path/to/project --harness all
 # 1. 记录现状基线（把已超标的文件冻结，之后只许变小）
 python -I .arch-guard/ratchet.py --init
 
-# 2. 提交 .arch-guard/baseline.json，否则门禁不生效
-git add .arch-guard/baseline.json
+# 2. 提交 .arch-guard/baseline.json 与 .arch-guard/budget.json，否则门禁不生效
+git add .arch-guard/
 
 # 3. 自检
 python -I .arch-guard/verify.py
 ```
+
+预算文件 `.arch-guard/budget.json` 由安装器在缺失时生成，默认值：
+
+```json
+{ "max_files": 40, "max_added_lines": 800, "max_new_endpoints": 5, "max_new_tables": 2 }
+```
+
+按项目实际调整，**不要为了让检查通过而调高**；要调必须写理由并让人确认。
 
 ## 自检与验证
 
@@ -84,6 +92,13 @@ python -I scripts/install.py --self-check
 
 # 设计扫描（只报告，不改判定）
 python -I .arch-guard/scan_design.py --src <源码根>
+
+# 旧代码体检：改造候选排序
+python -I .arch-guard/audit.py --root . --src <源码根> --top 20
+
+# 范围预算（交付前 / CI）
+python -I .arch-guard/scope_check.py --root .
+python -I .arch-guard/scope_check.py --root . --base origin/main
 
 # 棘轮校验
 python -I .arch-guard/ratchet.py --check
