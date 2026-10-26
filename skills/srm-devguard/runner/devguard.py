@@ -657,8 +657,31 @@ def cmd_install(root, args):
 
     if harness == "none":
         pass
+    elif harness == "codex":
+        # Codex 没有原生 Skill 发现机制，只认扁平的 *.md prompt；
+        # 因此把每个 SKILL.md 摊平成单文件，并附上细则文件的本地绝对路径。
+        prompts = root / targets["codex"]
+        prompts.mkdir(parents=True, exist_ok=True)
+        for skill_dir in sorted(skills_src.iterdir()):
+            if not skill_dir.is_dir():
+                continue
+            refs = sorted(p for p in skill_dir.rglob("*") if p.is_file() and p.name != "SKILL.md")
+            header = f"<!-- devguard skill: {skill_dir.name} -->\n"
+            if refs:
+                # 细则一并复制到状态目录，prompt 自带绝对路径，装完即自包含
+                ref_root = state_dir(root) / "skills" / skill_dir.name
+                header += "\n> 需要细则时直接读这些本地文件：\n"
+                for ref in refs:
+                    target = ref_root / ref.relative_to(skill_dir)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(ref, target)
+                    header += f"> - {target}\n"
+                header += "\n"
+            body = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+            (prompts / f"{skill_dir.name}.md").write_text(header + body, encoding="utf-8")
+            print(f"  + {targets['codex']}/{skill_dir.name}.md")
     else:
-        if not (root / f".{harness}").exists() and harness != "codex":
+        if not (root / f".{harness}").exists():
             print(f"目标项目没有 .{harness} 目录，跳过 skill 安装（runner 仍可用）")
         else:
             for skill_dir in sorted(skills_src.iterdir()):
